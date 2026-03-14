@@ -26,7 +26,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/anthropics/echoseo-blog-sdk.git"
+        "url": "git+https://github.com/MLTO-83/echoseo-blog-sdk.git"
     },
     "devDependencies": {
         "@types/node": "^25.5.0",
