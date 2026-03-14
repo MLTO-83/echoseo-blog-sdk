@@ -1,0 +1,35 @@
+{
+    "name": "echoseo-blog-sdk",
+    "version": "0.1.0",
+    "description": "SDK for integrating 3rd-party sites with the Echoseo Blog Center",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "prepublishOnly": "npm run build"
+    },
+    "keywords": [
+        "echoseo",
+        "blog",
+        "sdk",
+        "seo",
+        "content"
+    ],
+    "author": "",
+    "license": "MIT",
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/anthropics/echoseo-blog-sdk.git"
+    },
+    "devDependencies": {
+        "@types/node": "^25.5.0",
+        "typescript": "^5.0.0"
+    }
+}
