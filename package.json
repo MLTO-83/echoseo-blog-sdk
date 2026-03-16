@@ -1,6 +1,6 @@
 {
     "name": "echoseo-blog-sdk",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "SDK for integrating 3rd-party sites with the Echoseo Blog Center",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
