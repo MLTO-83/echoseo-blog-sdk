@@ -14,6 +14,37 @@ export interface BlogPost {
     readTime: string;
     gradient: string;
     featuredImage?: string;
+    metaDescription?: string;
+    heroImageUrl?: string;
+    heroImageAlt?: string;
+    keywords?: string[];
+    publishedAt?: string;
+    updatedAt?: string;
+}
+
+/**
+ * Next.js-compatible metadata object returned by buildArticleMetadata.
+ * Pass this directly as the return value of generateMetadata() in your page.
+ */
+export interface ArticleMetadata {
+    title: string;
+    description: string;
+    keywords?: string[];
+    openGraph: {
+        title: string;
+        description: string;
+        url: string;
+        type: "article";
+        images: Array<{ url: string; width: number; height: number; alt: string }>;
+        publishedTime?: string;
+        modifiedTime?: string;
+    };
+    twitter: {
+        card: "summary_large_image";
+        title: string;
+        description: string;
+        images: string[];
+    };
 }
 
 export class EchoseoBlogClient {
@@ -40,8 +71,14 @@ export class EchoseoBlogClient {
 
     /** Convert a Firestore REST document into a plain BlogPost object */
     private parseDoc(doc: Record<string, unknown>): BlogPost {
-        const fields = (doc as { fields?: Record<string, { stringValue?: string }> }).fields ?? {};
+        const fields = (doc as { fields?: Record<string, { stringValue?: string; arrayValue?: { values?: Array<{ stringValue?: string }> } }> }).fields ?? {};
         const str = (key: string) => fields[key]?.stringValue ?? "";
+        const optStr = (key: string) => fields[key]?.stringValue || undefined;
+        const strArray = (key: string): string[] | undefined => {
+            const arr = fields[key]?.arrayValue?.values;
+            if (!arr) return undefined;
+            return arr.map((v) => v.stringValue ?? "").filter(Boolean);
+        };
         return {
             slug: str("slug"),
             title: str("title"),
@@ -51,6 +88,12 @@ export class EchoseoBlogClient {
             readTime: str("readTime"),
             gradient: str("gradient") || "from-blue-600 to-cyan-500",
             featuredImage: fields["featuredImage"]?.stringValue,
+            metaDescription: optStr("metaDescription"),
+            heroImageUrl: optStr("heroImageUrl"),
+            heroImageAlt: optStr("heroImageAlt"),
+            keywords: strArray("keywords"),
+            publishedAt: optStr("publishedAt"),
+            updatedAt: optStr("updatedAt"),
         };
     }
 
@@ -131,3 +174,49 @@ export const getEchoseoClient = (): EchoseoBlogClient => {
     }
     return defaultClient;
 };
+
+/**
+ * Build a Next.js-compatible Metadata object from a BlogPost.
+ * Use as the return value of generateMetadata() in your article page.
+ *
+ * @example
+ * ```ts
+ * // app/blog/[slug]/page.tsx
+ * import { getEchoseoClient, buildArticleMetadata } from "echoseo-blog-sdk";
+ *
+ * export async function generateMetadata({ params }) {
+ *   const post = await getEchoseoClient().getPost(params.slug);
+ *   if (!post) return {};
+ *   return buildArticleMetadata(post, "https://echoops.org/blog");
+ * }
+ * ```
+ */
+export function buildArticleMetadata(post: BlogPost, baseUrl: string): ArticleMetadata {
+    const url = `${baseUrl.replace(/\/$/, "")}/${post.slug}`;
+    const description = post.metaDescription || post.excerpt || "";
+    const imageUrl = post.heroImageUrl || post.featuredImage;
+    const imageAlt = post.heroImageAlt || post.title;
+
+    return {
+        title: post.title,
+        description,
+        keywords: post.keywords,
+        openGraph: {
+            title: post.title,
+            description,
+            url,
+            type: "article",
+            images: imageUrl
+                ? [{ url: imageUrl, width: 1200, height: 630, alt: imageAlt }]
+                : [],
+            publishedTime: post.publishedAt,
+            modifiedTime: post.updatedAt,
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: post.title,
+            description,
+            images: imageUrl ? [imageUrl] : [],
+        },
+    };
+}
