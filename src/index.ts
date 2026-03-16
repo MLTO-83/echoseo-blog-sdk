@@ -98,15 +98,39 @@ export class EchoseoBlogClient {
     }
 
     /**
-     * Fetch all blog posts for this site from the blog center Firestore.
-     * Collection path: sites/{siteId}/articles
+     * Fetch all published blog posts for this site from the blog center Firestore,
+     * ordered by publishedAt descending.
+     * Collection: {siteId}_articles
      */
     async getPosts(siteId?: string): Promise<BlogPost[]> {
         const site = siteId ?? this.siteId;
-        const url = `${this.baseUrl}/sites/${site}/articles?key=${this.apiKey}`;
+        const { projectId } = this.config;
+        if (!projectId) throw new Error("EchoseoBlog: projectId is required.");
+        const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${this.apiKey}`;
+
+        const body = {
+            structuredQuery: {
+                from: [{ collectionId: `${site}_articles` }],
+                where: {
+                    fieldFilter: {
+                        field: { fieldPath: "status" },
+                        op: "EQUAL",
+                        value: { stringValue: "published" },
+                    },
+                },
+                orderBy: [
+                    {
+                        field: { fieldPath: "publishedAt" },
+                        direction: "DESCENDING",
+                    },
+                ],
+            },
+        };
 
         const res = await fetch(url, {
+            method: "POST",
             headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
             // Disable Next.js caching so we always get fresh data (ISR handles the cache layer)
             cache: "no-store",
         });
@@ -115,18 +139,19 @@ export class EchoseoBlogClient {
             throw new Error(`EchoseoBlog getPosts failed: ${res.status} ${res.statusText}`);
         }
 
-        const json = (await res.json()) as { documents?: Record<string, unknown>[] };
-        const docs = json.documents ?? [];
-        return docs.map((doc) => this.parseDoc(doc));
+        const json = (await res.json()) as Array<{ document?: Record<string, unknown> }>;
+        return json
+            .filter((entry) => entry.document)
+            .map((entry) => this.parseDoc(entry.document!));
     }
 
     /**
-     * Fetch a single blog post by slug.
-     * Document path: sites/{siteId}/articles/{slug}
+     * Fetch a single published blog post by slug.
+     * Document path: {siteId}_articles/{slug}
      */
     async getPost(slug: string, siteId?: string): Promise<BlogPost | null> {
         const site = siteId ?? this.siteId;
-        const url = `${this.baseUrl}/sites/${site}/articles/${slug}?key=${this.apiKey}`;
+        const url = `${this.baseUrl}/${site}_articles/${slug}?key=${this.apiKey}`;
 
         const res = await fetch(url, { cache: "no-store" });
 
@@ -136,6 +161,8 @@ export class EchoseoBlogClient {
         }
 
         const doc = (await res.json()) as Record<string, unknown>;
+        const fields = (doc as { fields?: Record<string, { stringValue?: string }> }).fields;
+        if (fields?.status?.stringValue !== "published") return null;
         return this.parseDoc(doc);
     }
 }
