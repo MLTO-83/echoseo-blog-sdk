@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 (2026-03-18)
+
+### Breaking Changes
+
+- **`content` renamed to `content_html`** — The `BlogPost` interface now uses `content_html` instead of `content`, reading from the `content_html` Firestore field. Update any code referencing `post.content` to use `post.content_html`.
+
 ## 0.3.0 (2026-03-16)
 
 ### Breaking Changes

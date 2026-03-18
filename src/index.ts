@@ -9,7 +9,7 @@ export interface BlogPost {
     slug: string;
     title: string;
     excerpt: string;
-    content: string;
+    content_html: string;
     category: string;
     readTime: string;
     gradient: string;
@@ -83,7 +83,7 @@ export class EchoseoBlogClient {
             slug: str("slug"),
             title: str("title"),
             excerpt: str("excerpt"),
-            content: str("content"),
+            content_html: str("content_html"),
             category: str("category"),
             readTime: str("readTime"),
             gradient: str("gradient") || "from-blue-600 to-cyan-500",
